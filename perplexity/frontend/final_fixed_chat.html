@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Health Assistant</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#4A90E2",
+            "background-light": "#F9F9F9",
+            "background-dark": "#101922",
+            "chatbot-bubble": "#EFEFEF",
+            "text-light": "#111418",
+            "text-dark": "#F9F9F9",
+            "text-secondary-light": "#617589",
+            "text-secondary-dark": "#a0aec0",
+          },
+          fontFamily: {
+            display: ["Inter", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+    }
+    .chat-scroll { scroll-behavior: smooth; }
+  </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+  <div class="flex h-full grow">
+    <main class="flex flex-1 flex-col h-screen bg-background-light dark:bg-background-dark">
+
+      <header class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark px-6 py-4">
+        <div class="flex items-center gap-4">
+          <h2 class="text-text-light dark:text-text-dark text-lg font-bold tracking-[-0.015em]">AI Health Assistant</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <p class="text-sm text-green-600 dark:text-green-400 font-medium">Connected to backend</p>
+          </div>
+        </div>
+
+        <div class="flex gap-2 items-center">
+          <button id="themeToggle"
+            class="flex items-center cursor-pointer justify-center rounded-lg h-10 px-3 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark text-sm font-medium">
+            <span class="material-symbols-outlined text-xl mr-1">dark_mode</span>
+            <span id="themeLabel">Dark</span>
+          </button>
+
+          <button id="refreshChat"
+            class="flex cursor-pointer items-center justify-center rounded-lg h-10 bg-gray-100 dark:bg-gray-700 text-text-light dark:text-text-dark px-2.5">
+            <span class="material-symbols-outlined text-xl">refresh</span>
+          </button>
+        </div>
+      </header>
+
+      <div id="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-6 chat-scroll"></div>
+
+      <div class="bg-white dark:bg-background-dark border-t border-gray-200 dark:border-gray-700 p-4">
+        <div class="relative">
+          <textarea id="symptomInput"
+            class="w-full resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-background-light dark:bg-gray-700 py-3 pl-4 pr-14 text-base text-text-light dark:text-text-dark placeholder:text-text-secondary-light dark:placeholder:text-text-secondary-dark"
+            placeholder="Enter your symptoms..." rows="1"></textarea>
+
+          <button id="sendBtn"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 disabled:bg-gray-300 dark:disabled:bg-gray-600">
+            <span class="material-symbols-outlined text-xl">send</span>
+          </button>
+        </div>
+
+        <p class="text-center text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">
+          This tool is for educational purposes only and is not a substitute for professional medical advice.
+        </p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  const input       = document.getElementById("symptomInput");
+  const sendBtn     = document.getElementById("sendBtn");
+  const chatContainer = document.getElementById("chatContainer");
+  const themeToggle = document.getElementById("themeToggle");
+  const themeLabel  = document.getElementById("themeLabel");
+  const refreshChat = document.getElementById("refreshChat");
+
+  function autoResize() {
+    input.style.height = "auto";
+    input.style.height = input.scrollHeight + "px";
+  }
+  input.addEventListener("input", autoResize);
+
+  function getCurrentTime() {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function addUserBubble(text) {
+    const time = getCurrentTime();
+    const wrapper = document.createElement("div");
+    wrapper.className = "flex items-end gap-3 justify-end";
+    wrapper.innerHTML = `
+      <div class="flex flex-1 flex-col gap-1 items-end">
+        <p class="text-base leading-relaxed max-w-lg rounded-xl rounded-br-none px-4 py-3 bg-primary text-white">${text}</p>
+        <p class="text-xs text-gray-500">${time}</p>
+      </div>`;
+    chatContainer.appendChild(wrapper);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  function addBotBubbleFromTextBlock(textBlock) {
+    const safeHtml = textBlock.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/\n/g,"<br>");
+
+    const time = getCurrentTime();
+    const wrapper = document.createElement("div");
+    wrapper.className = "flex items-end gap-3 max-w-xl";
+    wrapper.innerHTML = `
+      <div class="flex h-10 w-10 rounded-full bg-primary text-white items-center justify-center">
+        <span class="material-symbols-outlined">smart_toy</span>
+      </div>
+      <div class="flex flex-1 flex-col gap-1 items-start">
+        <p class="text-sm md:text-base rounded-xl rounded-bl-none px-4 py-3 bg-chatbot-bubble">${safeHtml}</p>
+        <p class="text-xs text-gray-500">${time}</p>
+      </div>`;
+    chatContainer.appendChild(wrapper);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    const wrapper = document.createElement("div");
+    wrapper.id = "typingIndicator";
+    wrapper.className = "flex items-end gap-3 max-w-xl";
+    wrapper.innerHTML = `
+      <div class="flex h-10 w-10 rounded-full bg-primary text-white items-center justify-center">
+        <span class="material-symbols-outlined">smart_toy</span>
+      </div>
+      <div class="flex items-center gap-1.5 rounded-xl px-4 py-3 bg-chatbot-bubble">
+        <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
+        <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
+        <span class="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></span>
+      </div>`;
+    chatContainer.appendChild(wrapper);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const t = document.getElementById("typingIndicator");
+    if (t) t.remove();
+  }
+
+  async function callChatApi(symptoms) {
+    const res = await fetch("http://127.0.0.1:5000/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ symptoms })
+    });
+    return res.json();
+  }
+
+  async function callDiseaseApi(symptoms) {
+    const res = await fetch("http://127.0.0.1:5000/api/predict_disease", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ symptoms })
+    });
+    return res.json();
+  }
+
+  async function callMedicineApi(symptoms) {
+    const res = await fetch("http://127.0.0.1:5000/api/recommend_medicines", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ symptoms, topk:3 })
+    });
+    return res.json();
+  }
+
+  sendBtn.addEventListener("click", async () => {
+    const symptoms = input.value.trim();
+    if (!symptoms) return alert("Please enter symptoms");
+
+    addUserBubble(symptoms);
+    input.value = "";
+    autoResize();
+
+    addTypingIndicator();
+
+    try {
+      const [chatResp, disease, meds] = await Promise.all([
+        callChatApi(symptoms),
+        callDiseaseApi(symptoms),
+        callMedicineApi(symptoms)
+      ]);
+
+      removeTypingIndicator();
+
+      let txt = "";
+      if (chatResp?.message) txt += "Chatbot answer:\n" + chatResp.message + "\n\n";
+      if (disease?.prediction) {
+        txt += `Predicted disease: ${disease.prediction}\n`;
+        txt += `Description: ${disease.description}\n`;
+        txt += `Precautions: ${disease.precautions?.join(", ")}\n\n`;
+      }
+      if (meds?.medicines) {
+        txt += "Medicines:\n";
+        meds.medicines.forEach((m,i)=> txt+=`${i+1}. ${m.Name} (${m["Dosage Form"]})\n`);
+      }
+
+      addBotBubbleFromTextBlock(txt || "No response from backend.");
+
+    } catch(err) {
+      removeTypingIndicator();
+      addBotBubbleFromTextBlock("Error contacting backend.");
+    }
+  });
+
+  input.addEventListener("keydown", e => {
+    if (e.key==="Enter" && !e.shiftKey){
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  function setTheme(mode){
+    const html=document.documentElement;
+    if(mode==="dark"){
+      html.classList.add("dark");
+      themeLabel.textContent="Light";
+      localStorage.setItem("theme","dark");
+    } else{
+      html.classList.remove("dark");
+      themeLabel.textContent="Dark";
+      localStorage.setItem("theme","light");
+    }
+  }
+
+  setTheme(localStorage.getItem("theme") || "light");
+
+  themeToggle.addEventListener("click",()=>{
+    const html=document.documentElement;
+    setTheme(html.classList.contains("dark") ? "light" : "dark");
+  });
+
+  refreshChat.addEventListener("click",()=>{
+    chatContainer.innerHTML="";
+  });
+</script>
+</body>
+</html>

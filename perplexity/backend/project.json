@@ -1,0 +1,20 @@
+// Disease prediction:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/predict_disease ^
+  -H "Content-Type: application/json" ^
+  -d "{\"symptoms\": \"itching, skin_rash, nodal_skin_eruptions\"}"
+  
+// Medicine recommendation:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/recommend_medicines ^
+  -H "Content-Type: application/json" ^
+  -d "{\"symptoms\": \"fever, headache\", \"topk\": 3}"
+
+  // Chat answer:
+
+bash
+curl -X POST http://127.0.0.1:5000/api/chat ^
+  -H "Content-Type: application/json" ^
+  -d "{\"symptoms\": \"fever, headache, body pain\"}"
